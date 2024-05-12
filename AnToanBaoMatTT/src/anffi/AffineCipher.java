@@ -69,7 +69,7 @@ public class AffineCipher {
     }
 
     public static void main(String[] args) {
-        String text = "Hello World";
+        String text = "Dai hoc Cong nghiep ha noi";
         int a = 5;
         int b = 8;
         // Kiểm tra xem a có là một phần của nhóm modulo 26 hay không

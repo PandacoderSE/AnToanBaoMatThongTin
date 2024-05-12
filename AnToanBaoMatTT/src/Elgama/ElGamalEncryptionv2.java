@@ -1,86 +1,54 @@
 package Elgama;
-import java.util.ArrayList;
-import java.util.Random;
+
+import java.math.BigInteger;
+import java.security.SecureRandom;
 
 public class ElGamalEncryptionv2 {
-    private static final Random rand = new Random();
+    private BigInteger p, g, h, x, y;
+    private SecureRandom rnd;
+
+    public ElGamalEncryptionv2(BigInteger p, BigInteger g, BigInteger h, BigInteger x) {
+        this.p = p;
+        this.g = g;
+        this.h = h;
+        this.x = x;
+        this.rnd = new SecureRandom();
+    }
+
+    public BigInteger[] encrypt(String message) {
+        byte[] bytes = message.getBytes();
+        BigInteger m = new BigInteger(bytes);
+        BigInteger k = new BigInteger(p.bitLength(), rnd);
+        y = g.modPow(k, p);
+        BigInteger s = h.modPow(k, p);
+        BigInteger c = m.multiply(s).mod(p);
+        return new BigInteger[]{y, c};
+    }
+
+    public String decrypt(BigInteger[] encrypted) {
+        BigInteger y = encrypted[0];
+        BigInteger c = encrypted[1];
+        BigInteger s = y.modPow(x, p);
+        BigInteger m = c.multiply(s.modInverse(p)).mod(p);
+        return new String(m.toByteArray());
+    }
 
     public static void main(String[] args) {
-        String msg = "encryption";
-        System.out.println("Original Message: " + msg);
+        // Example usage:
+        BigInteger p = new BigInteger("Your large prime number here");
+        BigInteger g = new BigInteger("Your generator value here");
+        BigInteger h = new BigInteger("Your public key h value here");
+        BigInteger x = new BigInteger("Your private key x value here");
 
-        long q = (long) Math.pow(10, 19) + rand.nextInt((int) Math.pow(10, 20));
-        long g = rand.nextInt((int) (q - 2)) + 2;
+        ElGamalEncryptionv2 elGamal = new ElGamalEncryptionv2(p, g, h, x);
 
-        long key = genKey(q); // Private key for receiver
-        long h = power(g, key, q);
+        // Encrypting the message
+        String message = "Hello, this is a test message!";
+        BigInteger[] encrypted = elGamal.encrypt(message);
+        System.out.println("Encrypted message: " + encrypted[0].toString(16) + " " + encrypted[1].toString(16));
 
-        System.out.println("g used: " + g);
-        System.out.println("g^a used: " + h);
-
-        ArrayList<Long> enMsg = encrypt(msg, q, h, g);
-        ArrayList<Character> drMsg = decrypt(enMsg, h, key, q);
-
-        System.out.print("Decrypted Message: ");
-        for (char c : drMsg) {
-            System.out.print(c);
-        }
-        System.out.println();
-    }
-
-    private static long gcd(long a, long b) {
-        return b == 0 ? a : gcd(b, a % b);
-    }
-
-    private static long genKey(long q) {
-        long key = rand.nextInt((int) (q - 2)) + 2;
-        while (gcd(q, key) != 1) {
-            key = rand.nextInt((int) (q - 2)) + 2;
-        }
-        return key;
-    }
-
-    private static long power(long a, long b, long c) {
-        long x = 1;
-        long y = a % c;
-
-        while (b > 0) {
-            if (b % 2 != 0) {
-                x = (x * y) % c;
-            }
-            y = (y * y) % c;
-            b /= 2;
-        }
-        return x % c;
-    }
-
-    private static ArrayList<Long> encrypt(String msg, long q, long h, long g) {
-        ArrayList<Long> enMsg = new ArrayList<>();
-        long k = genKey(q); // Private key for sender
-        long s = power(h, k, q);
-        long p = power(g, k, q);
-
-        System.out.println("g^k used: " + p);
-        System.out.println("g^ak used: " + s);
-
-        for (int i = 0; i < msg.length(); i++) {
-            enMsg.add((long) msg.charAt(i));
-        }
-
-        for (int i = 0; i < enMsg.size(); i++) {
-            enMsg.set(i, s * enMsg.get(i));
-        }
-
-        return enMsg;
-    }
-
-    private static ArrayList<Character> decrypt(ArrayList<Long> enMsg, long p, long key, long q) {
-        ArrayList<Character> drMsg = new ArrayList<>();
-        long h = power(p, key, q);
-
-        for (Long l : enMsg) {
-            drMsg.add((char) (l / h));
-        }
-        return drMsg;
+        // Decrypting the message
+        String decryptedMessage = elGamal.decrypt(encrypted);
+        System.out.println("Decrypted message: " + decryptedMessage);
     }
 }
